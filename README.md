@@ -1,4 +1,4 @@
-# Konstebox
+# WebDarcWallet
 
 Konstellation web wallet
 
