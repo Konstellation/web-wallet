@@ -1,6 +1,6 @@
-import sdk from 'cosmosjs';
+import sdk from '@konstellation/cosmosjs';
 
-const chain = sdk.network({
+const chain = sdk({
     // apiUrl: 'http://localhost:1317',
     apiUrl: 'http://95.216.215.127:1317',
     // nodeUrl: 'http://localhost:26657',

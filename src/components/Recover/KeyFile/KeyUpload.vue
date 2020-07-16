@@ -18,7 +18,7 @@
 </template>
 
 <script>
-    import AccountKeyPair from 'cosmosjs/src/types/AccountKeyPair';
+    import AccountKeyPair from '@konstellation/cosmosjs/src/types/AccountKeyPair';
 
     export default {
         name: 'KeyUpload',

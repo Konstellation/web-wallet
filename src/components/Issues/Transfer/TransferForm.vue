@@ -110,7 +110,7 @@
     import { mapState, mapGetters } from 'vuex';
     import { isEmpty } from 'lodash';
 
-    import AccountKeyPair from 'cosmosjs/src/types/AccountKeyPair';
+    import AccountKeyPair from '@konstellation/cosmosjs/src/types/AccountKeyPair';
     import { DEFAULT_DENOM } from '../../../constants';
     import View from '../../../views/View';
 

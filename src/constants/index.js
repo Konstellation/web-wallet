@@ -4,7 +4,7 @@ import {
     DEFAULT_FEE,
     DEFAULT_GAS,
     DEFAULT_BECH32_PREFIX,
-} from 'cosmosjs/src/constants';
+} from '@konstellation/cosmosjs/src/constants';
 import {en} from './lang';
 import {txFieldsMap} from './txFieldsMap';
 import {paramScheme} from './paramScheme';

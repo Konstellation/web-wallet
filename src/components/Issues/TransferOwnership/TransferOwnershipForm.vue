@@ -59,7 +59,7 @@
     import {get} from 'lodash';
     import moment from 'dayjs';
     import {mapGetters, mapState} from 'vuex';
-    import AccountKeyPair from 'cosmosjs/src/types/AccountKeyPair';
+    import AccountKeyPair from '@konstellation/cosmosjs/src/types/AccountKeyPair';
     import View from '../../../views/View';
     import {DEFAULT_DENOM} from '../../../constants';
 
