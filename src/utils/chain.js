@@ -1,11 +1,9 @@
 import sdk from '@konstellation/cosmosjs';
 
 const chain = sdk({
-    // apiUrl: 'http://localhost:1317',
-    apiUrl: 'http://95.216.215.127:1317',
-    // nodeUrl: 'http://localhost:26657',
-    nodeUrl: 'http://95.216.215.127:26657',
-    chainId: 'darchub',
+    apiUrl: 'http://node1.konstellation.tech:1317',
+    nodeUrl: 'http://node1.konstellation.tech:26657',
+    chainId: 'knstlhub-1',
 });
 
 export default chain;

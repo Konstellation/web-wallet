@@ -1,5 +1,4 @@
 import {
-    DEFAULT_DENOM,
     DEFAULT_KEY_PATH,
     DEFAULT_FEE,
     DEFAULT_GAS,
@@ -15,6 +14,7 @@ import options from './options';
 const apiDomain = 'http://127.0.0.1:1317/';
 const baseURL = `${apiDomain}`;
 const explorerDomain = 'http://127.0.0.1:8080/';
+const DEFAULT_DENOM = 'udarc';
 
 export {
     en,
