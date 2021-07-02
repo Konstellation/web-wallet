@@ -218,7 +218,10 @@ Vue.component('transaction-list', TransactionList);
 Vue.component('proposal-list', ProposalList);
 
 (async () => {
-    await init();
+    await init({
+        signerAddress: 'darc1rzdt9wrzwv3x7vv6f7xpyaqqgf3lt6phptqtsx',
+        gasPrice: { amount: '0.025', denom: 'udarc' },
+    });
     return new Vue({
         i18n,
         router,

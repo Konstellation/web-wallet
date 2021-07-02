@@ -3,7 +3,7 @@ import { get, isEmpty } from 'lodash';
 import { Message } from 'element-ui';
 import chain from '../../../utils/chain';
 import { DEFAULT_DENOM } from '../../../constants';
-import { Celestial } from '../../../utils/celestial';
+import { Celestial, init } from '../../../utils/celestial';
 
 const wallet_users = localStorage.getItem('wallet_users') || '{}';
 const wallet_username = localStorage.getItem('wallet_username') || '';
@@ -121,15 +121,18 @@ export default {
             }
         },
         async importKeyStore(context, { name, pass, keyStore }) {
+            console.log(keyStore);
             const key = JSON.parse(keyStore);
             let err = '';
             let account;
             try {
-                account = chain.importAccountFromV3KeyStore(key, pass);
+                account = await Celestial.account.importKeystore(key, pass);
+                console.log(account);
                 if (isEmpty(account)) {
                     err = 'keyStore or password is invalid!';
                 }
             } catch (e) {
+                console.log(e);
                 err = 'keyStore or password is invalid!';
             }
             if (err) {
