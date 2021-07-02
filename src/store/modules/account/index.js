@@ -1,8 +1,9 @@
-import {get, isEmpty} from 'lodash';
+import { get, isEmpty } from 'lodash';
 
-import {Message} from 'element-ui';
+import { Message } from 'element-ui';
 import chain from '../../../utils/chain';
-import {DEFAULT_DENOM} from '../../../constants';
+import { DEFAULT_DENOM } from '../../../constants';
+import { Celestial } from '../../../utils/celestial';
 
 const wallet_users = localStorage.getItem('wallet_users') || '{}';
 const wallet_username = localStorage.getItem('wallet_username') || '';
@@ -14,21 +15,20 @@ export default {
     state: {
         loading: false,
         userName: wallet_username,
-        account: {},
         keyStore: KeyStore,
-        userMap: {...UserMap},
+        userMap: { ...UserMap },
         balance: [],
     },
     getters: {
-        currentAddress (state) {
+        currentAddress(state) {
             return get(state.keyStore, 'address');
         },
-        accountBalance (state) {
+        accountBalance(state) {
             const balance = state.balance.find(i => i.denom === DEFAULT_DENOM) || {
                 amount: '0',
                 denom: DEFAULT_DENOM,
             };
-            const res = {...balance};
+            const res = { ...balance };
 
             res.label = DEFAULT_DENOM.toUpperCase();
 
@@ -36,33 +36,30 @@ export default {
         },
     },
     mutations: {
-        setLoading (state, loading) {
+        setLoading(state, loading) {
             state.loading = loading;
         },
-        setUserName (state, userName) {
+        setUserName(state, userName) {
             state.userName = userName;
         },
-        setAccount (state, account) {
-            state.account = account;
-        },
-        setKeyStore (state, kStore) {
+        setKeyStore(state, kStore) {
             state.keyStore = kStore;
         },
-        setUserMap (state, uMap) {
+        setUserMap(state, uMap) {
             state.userMap = Object.assign({}, state.userMap, uMap);
         },
-        resetUserMap (state, uMap) {
+        resetUserMap(state, uMap) {
             state.userMap = uMap;
         },
-        setBalance (state, balance) {
+        setBalance(state, balance) {
             state.balance = balance;
         },
-        setTokenMap (state, data) {
+        setTokenMap(state, data) {
             state.tokenMap = Object.assign({}, state.tokenMap, data);
         },
     },
     actions: {
-        async create (context, {name, pass}) {
+        async create(context, { name, pass }) {
             // reject if name exist
             if (context.state.userMap[name]) {
                 return Promise.resolve(false);
@@ -71,36 +68,31 @@ export default {
             // create account
             const account = chain.generateAccount();
             context.commit('setUserName', name);
-            context.commit('setAccount', account);
 
             // generate keyStore with password
-            context.dispatch('generateKeyStore', pass);
+            context.dispatch('generateKeyStore', { pass, account });
 
             return Promise.resolve(true);
         },
-        generateKeyStore (context, pass) {
-            const {account} = context.state;
+        generateKeyStore(context, { pass, account }) {
             const ks = chain.exportAccountToV3KeyStore(account, pass);
 
             context.commit('setKeyStore', ks);
 
             return Promise.resolve();
         },
-        async finishCreate (context) {
+        async finishCreate(context) {
             const name = context.state.userName;
 
-            context.commit('setUserMap', {[name]: context.state.keyStore});
+            context.commit('setUserMap', { [name]: context.state.keyStore });
 
             // save keyStore to localStorage
             localStorage.setItem('wallet_username', name);
             localStorage.setItem('wallet_users', JSON.stringify(context.state.userMap));
 
-            // clear account mnemonic
-            context.commit('setAccount', {});
-
             return Promise.resolve(true);
         },
-        async importPhrase (context, {name, pass, phrase}) {
+        async importPhrase(context, { name, pass, phrase }) {
             // reject if name exist
             if (context.state.userMap[name]) {
                 Message({
@@ -114,9 +106,8 @@ export default {
             try {
                 const account = chain.recoverAccount(phrase);
                 context.commit('setUserName', name);
-                context.commit('setAccount', account);
 
-                context.dispatch('generateKeyStore', pass);
+                context.dispatch('generateKeyStore', { pass, account });
                 await context.dispatch('finishCreate');
 
                 return Promise.resolve(account);
@@ -129,7 +120,7 @@ export default {
                 return Promise.resolve();
             }
         },
-        async importKeyStore (context, {name, pass, keyStore}) {
+        async importKeyStore(context, { name, pass, keyStore }) {
             const key = JSON.parse(keyStore);
             let err = '';
             let account;
@@ -152,14 +143,13 @@ export default {
 
             context.commit('setUserName', name);
             context.commit('setKeyStore', key);
-            context.commit('setAccount', account);
 
             await context.dispatch('finishCreate');
 
             return Promise.resolve(account);
         },
-        async login (context, {name, pass}) {
-            const {userMap} = context.state;
+        async login(context, { name, pass }) {
+            const { userMap } = context.state;
             const ks = userMap[name];
 
             chain.importAccountFromV3KeyStore(ks, pass);
@@ -171,9 +161,9 @@ export default {
 
             return Promise.resolve(name);
         },
-        async editName (context, {user, name}) {
-            const {userMap, userName} = context.state;
-            const userMapNew = {...userMap};
+        async editName(context, { user, name }) {
+            const { userMap, userName } = context.state;
+            const userMapNew = { ...userMap };
 
             userMapNew[name] = userMapNew[user];
             delete userMapNew[user];
@@ -190,18 +180,18 @@ export default {
 
             return Promise.resolve(name);
         },
-        async backup (context, {user, pass}) {
-            const {userMap} = context.state;
+        async backup(context, { user, pass }) {
+            const { userMap } = context.state;
             const keyStore = userMap[user];
             const account = chain.importAccountFromV3KeyStore(keyStore, pass);
 
             return Promise.resolve(account);
         },
-        async delete (context, {user, pass}) {
-            const {userMap, userName} = context.state;
+        async delete(context, { user, pass }) {
+            const { userMap, userName } = context.state;
             const keyStore = userMap[user];
             const account = chain.importAccountFromV3KeyStore(keyStore, pass);
-            const userMapNew = {...userMap};
+            const userMapNew = { userMap };
             delete userMapNew[user];
 
             context.commit('resetUserMap', userMapNew);
@@ -216,11 +206,14 @@ export default {
 
             return Promise.resolve(account);
         },
-        async fetchBalance (context) {
+        async fetchBalance(context) {
+            const response = await Celestial.bank.queries.AllBalances({
+                address: 'darc1ejgxhtvj6c9n7d7g29jmsxhnn6wh2j8rll0vfc',
+            });
+            const result = response.balances;
+
             context.commit('setLoading', true);
 
-            const {keyStore} = context.state;
-            const {result} = await chain.fetchAccountBalance(keyStore.address);
             if (!isEmpty(result)) {
                 result.sort(i => (i.denom === DEFAULT_DENOM ? -1 : 1));
                 context.commit('setBalance', result);

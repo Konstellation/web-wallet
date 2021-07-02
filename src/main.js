@@ -5,9 +5,7 @@ import ElementUI from 'element-ui';
 import VueI18n from 'vue-i18n';
 import VueClipboard from 'vue-clipboard2';
 import '@/styles/element-variables.scss';
-import {
-    library,
-} from '@fortawesome/fontawesome-svg-core';
+import { library } from '@fortawesome/fontawesome-svg-core';
 import {
     faArrowUp,
     faArrowDown,
@@ -52,9 +50,7 @@ import {
     faWeibo,
     faWeixin,
 } from '@fortawesome/free-brands-svg-icons';
-import {
-    FontAwesomeIcon,
-} from '@fortawesome/vue-fontawesome';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import GraphLine3D from 'vue-graph/src/components/line3d.js';
 import GraphTreeMap from 'vue-graph/src/components/treemap';
 import pie from 'vue-graph/src/components/pie';
@@ -64,9 +60,7 @@ import tooltip from 'vue-graph/src/widgets/tooltip';
 import App from './App.vue';
 import router from './router';
 
-import {
-    en,
-} from './constants';
+import { en } from './constants';
 import * as filters from './utils/filters.js';
 import rootStore from './store/index.js';
 
@@ -108,6 +102,8 @@ import FreezeDetail from './components/Issues/Freeze/FreezeDetail';
 import UnfreezeDetail from './components/Issues/Unfreeze/UnfreezeDetail';
 import ChangeFeaturesDetail from './components/Issues/ChangeFeatures/ChangeFeaturesDetail';
 import ChangeDescriptionDetail from './components/Issues/ChangeDescription/ChangeDescriptionDetail';
+
+import { init } from './utils/celestial';
 
 Vue.config.productionTip = false;
 
@@ -221,9 +217,12 @@ Vue.component('account-select', AccountSelect);
 Vue.component('transaction-list', TransactionList);
 Vue.component('proposal-list', ProposalList);
 
-new Vue({
-    i18n,
-    router,
-    store,
-    render: h => h(App),
-}).$mount('#app');
+(async () => {
+    await init();
+    return new Vue({
+        i18n,
+        router,
+        store,
+        render: h => h(App),
+    }).$mount('#app');
+})();

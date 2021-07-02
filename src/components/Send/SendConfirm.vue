@@ -42,136 +42,126 @@
 </template>
 
 <script>
-    import {mapState} from 'vuex';
-    import View from '../../views/View';
+import { mapState } from 'vuex';
+import View from '../../views/View';
 
-    export default {
-        name: 'Confirm',
-        extends: View,
-        data () {
-            return {
-                form: {},
-                dialogVisible: false,
-                pass: '',
-            };
+export default {
+    name: 'Confirm',
+    extends: View,
+    data() {
+        return {
+            form: {},
+            dialogVisible: false,
+            pass: '',
+        };
+    },
+    computed: {
+        ...mapState('account', ['userName', 'userMap']),
+    },
+    beforeMount() {
+        this.form = JSON.parse(sessionStorage.getItem('sendForm'));
+        if (!this.form.denom) {
+            this.$router.push('/send/form');
+        }
+    },
+    methods: {
+        async onSubmit() {
+            this.pass = '';
+            this.dialogVisible = true;
         },
-        computed: {
-            ...mapState('account', {
-                userName: 'userName',
-                userMap: 'userMap',
-            }),
-        },
-        beforeMount () {
-            this.form = JSON.parse(sessionStorage.getItem('sendForm'));
-            if (!this.form.denom) {
-                this.$router.push('/send/form');
+        async onSend() {
+            if (!this.pass) {
+                this.$message({
+                    type: 'error',
+                    message: this.$t('global.required', { name: this.$t('create.pass') }),
+                    center: true,
+                });
+                return false;
             }
-        },
-        methods: {
-            async onSubmit () {
-                this.pass = '';
-                this.dialogVisible = true;
-            },
-            async onSend () {
-                if (!this.pass) {
-                    this.$message({
-                        type: 'error',
-                        message: this.$t('global.required', {name: this.$t('create.pass')}),
-                        center: true,
-                    });
-                    return false;
-                }
 
-                const loading = this.$loading({
-                    lock: true,
-                    text: 'Loading',
-                    spinner: 'el-icon-loading',
-                    background: 'rgba(0, 0, 0, 0.7)',
+            const loading = this.$loading({
+                lock: true,
+                text: 'Loading',
+                spinner: 'el-icon-loading',
+                background: 'rgba(0, 0, 0, 0.7)',
+            });
+            try {
+                const { txhash, logs, code, error, raw_log } = await this.$store.dispatch('transactions/send', {
+                    form: this.form,
+                    keyStore: this.userMap[this.userName],
+                    pass: this.pass,
                 });
 
-                try {
-                    const {
-                        txhash, logs, code, error, raw_log,
-                    } = await this.$store.dispatch('transactions/send', {
-                        form: this.form,
-                        keyStore: this.userMap[this.userName],
-                        pass: this.pass,
+                if (error) {
+                    this.$store.dispatch('transactions/result', {});
+                    this.$message({
+                        type: 'error',
+                        message: error,
+                        center: true,
                     });
+                }
 
-                    if (error) {
-                        this.$store.dispatch('transactions/result', {});
+                if (error) {
+                    this.$message({
+                        type: 'error',
+                        message: error,
+                        center: true,
+                    });
+                }
+
+                if (code) {
+                    const { message } = JSON.parse(raw_log);
+                    // const codeErrors = {
+                    //     4: 'Signature verification error',
+                    //     5: 'insufficient funds to pay for fees',
+                    // };
+
+                    this.$message({
+                        type: 'error',
+                        message,
+                        center: true,
+                    });
+                }
+
+                if (logs) {
+                    const [{ log, message, success }] = logs;
+
+                    if (success) {
+                        this.dialogVisible = false;
                         this.$message({
-                            type: 'error',
-                            message: error,
-                            center: true,
+                            type: 'success',
+                            message: `${this.$t('global.success', { name: log })} ${this.$t(
+                                'send.waitTxConfirmation',
+                            )}`,
                         });
-                    }
+                        loading.close();
 
-                    if (error) {
-                        this.$message({
-                            type: 'error',
-                            message: error,
-                            center: true,
-                        });
-                    }
-
-                    if (code) {
-                        const { message } = JSON.parse(raw_log);
-                        // const codeErrors = {
-                        //     4: 'Signature verification error',
-                        //     5: 'insufficient funds to pay for fees',
-                        // };
-
+                        this.$router.push(`/tx/${txhash}`);
+                    } else {
                         this.$message({
                             type: 'error',
                             message,
                             center: true,
                         });
                     }
-
-                    if (logs) {
-                        const [
-                            {
-                                log,
-                                message,
-                                success,
-                            },
-                        ] = logs;
-
-                        if (success) {
-                            this.dialogVisible = false;
-                            this.$message({
-                                type: 'success',
-                                message: `${this.$t('global.success', { name: log })} ${this.$t('send.waitTxConfirmation')}`,
-                            });
-                            loading.close();
-
-                            this.$router.push(`/tx/${txhash}`);
-                        } else {
-                            this.$message({
-                                type: 'error',
-                                message,
-                                center: true,
-                            });
-                        }
-                    }
-
-                    loading.close();
-                } catch (e) {
-                    this.$store.dispatch('transactions/result', {});
-                    this.$message({
-                        type: 'error',
-                        message: `${this.$t('send.error')} ${e}`,
-                        center: true,
-                    });
                 }
 
                 loading.close();
+            } catch (e) {
+                this.$store.dispatch('transactions/result', {});
+                this.$message({
+                    type: 'error',
+                    message: `${this.$t('send.error')} ${e}`,
+                    center: true,
+                });
+            }
 
-                return true;
-            },
+            loading.close();
+
+            return true;
         },
-    };
+    },
+};
 </script>
 
 <style lang="scss" scoped>

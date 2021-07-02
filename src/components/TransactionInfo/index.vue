@@ -338,212 +338,252 @@
 </template>
 
 <script>
-    import {get, isEmpty} from 'lodash';
-    import moment from 'dayjs';
-    import actions from '../../constants/actions';
-    import FreezeDetail from '../Issues/Freeze/FreezeDetail';
-    import ChangeFeaturesDetail from '../Issues/ChangeFeatures/ChangeFeaturesDetail';
-    import ChangeDescriptionDetail from '../Issues/TransferOwnership/TransferOwnershipDetail';
+import { get, isEmpty } from 'lodash';
+import moment from 'dayjs';
+import actions from '../../constants/actions';
+import FreezeDetail from '../Issues/Freeze/FreezeDetail';
+import ChangeFeaturesDetail from '../Issues/ChangeFeatures/ChangeFeaturesDetail';
+import ChangeDescriptionDetail from '../Issues/TransferOwnership/TransferOwnershipDetail';
 
-    export default {
-        name: 'TxInfo',
-        components: {ChangeDescriptionDetail, ChangeFeaturesDetail, FreezeDetail},
-        data() {
-            return {
-                loading: false,
-                invalid: false,
-                tx: undefined,
-            };
+export default {
+    name: 'TxInfo',
+    components: { ChangeDescriptionDetail, ChangeFeaturesDetail, FreezeDetail },
+    data() {
+        return {
+            loading: false,
+            invalid: false,
+            tx: undefined,
+        };
+    },
+    computed: {
+        action() {
+            return get(this.tx, 'events')
+                .find(e => e.type === 'message')
+                .attributes.find(a => a.key === 'action').value;
         },
-        computed: {
-            action() {
-                return get(this.tx, 'events').find(e => e.type === 'message').attributes
-                    .find(a => a.key === 'action').value;
-            },
-            type() {
-                return actions[this.action] ? actions[this.action].title : '';
-            },
-            info() {
-                if (actions[this.action]) {
-                    const info = get(this.tx, 'events')
-                        .find(e => e.type === actions[this.action].type);
-                    if (info) {
-                        return info;
-                    }
-                }
-                return '';
-            },
+        type() {
+            return actions[this.action] ? actions[this.action].title : '';
         },
-        async mounted() {
-            const self = this;
-            this.loading = true;
-            let counter = 50;
-            this.interval = setInterval(async () => {
-                const {error} = await self.getTx();
-                if (!error) {
-                    const data = await self.getTx();
-                    if (!data.events || !data.logs) {
-                        self.invalid = true;
-                        self.tx = data;
-                    } else {
-                        const {
-                            logs: [
-                                {
-                                    success,
-                                    log,
-                                },
-                            ],
-                            ...tx
-                        } = await self.getTx();
-
-                        self.tx = {
-                            ...tx,
-                            log,
-                            success,
-                        };
-                    }
-                    self.loading = false;
-                    self.err = false;
-
-                    clearInterval(self.interval);
+        info() {
+            if (actions[this.action]) {
+                const info = get(this.tx, 'events').find(e => e.type === actions[this.action].type);
+                if (info) {
+                    return info;
                 }
-                counter--;
-
-                if (counter === 0) {
-                    self.loading = false;
-                    clearInterval(self.interval);
-                }
-            }, 1000);
+            }
+            return '';
         },
-        methods: {
-            get,
-            isEmpty,
-            moment,
-            getTx() {
-                const {hash} = this.$route.params;
-                return this.$store.dispatch('transactions/fetchTxInfo', hash);
-            },
-            formatTx(tx, action) {
-                const {
-                    value: {
-                        msg: [
-                            {
-                                value,
-                            },
-                        ],
-                    },
-                } = tx;
+    },
+    async mounted() {
+        const self = this;
+        this.loading = true;
+        let counter = 50;
+        this.interval = setInterval(async () => {
+            const { error } = await self.getTx();
+            if (!error) {
+                const data = await self.getTx();
+                if (!data.events || !data.logs) {
+                    self.invalid = true;
+                    self.tx = data;
+                } else {
+                    const {
+                        logs: [{ success, log }],
+                        ...tx
+                    } = await self.getTx();
 
-                switch (action) {
-                    case 'issue_create':
-                        return {
-                            ...value,
-                            ...value.params,
-                            ...value.params.features,
-                        };
-                    case 'freeze':
-                    case 'unfreeze':
-                    case 'transfer_ownership':
-                    case 'description':
-                    case 'withdraw_validator_commission':
-                        return {
-                            ...value,
-                        };
-                    case 'features':
-                        return {
-                            ...value,
-                            ...value.features,
-                        };
-                    default:
-                        const {amount: [{denom, amount}]} = value;
-
-                        return {
-                            ...value,
-                            amount,
-                            denom,
-                        };
+                    self.tx = {
+                        ...tx,
+                        log,
+                        success,
+                    };
                 }
-            },
+                self.loading = false;
+                self.err = false;
+
+                clearInterval(self.interval);
+            }
+            counter--;
+
+            if (counter === 0) {
+                self.loading = false;
+                clearInterval(self.interval);
+            }
+        }, 1000);
+    },
+    methods: {
+        get,
+        isEmpty,
+        moment,
+        getTx() {
+            const { hash } = this.$route.params;
+            return this.$store.dispatch('transactions/fetchTxInfo', hash);
         },
-    };
+        formatTx(tx, action) {
+            const {
+                value: {
+                    msg: [{ value }],
+                },
+            } = tx;
+
+            switch (action) {
+                case 'issue_create':
+                    return {
+                        ...value,
+                        ...value.params,
+                        ...value.params.features,
+                    };
+                case 'freeze':
+                case 'unfreeze':
+                case 'transfer_ownership':
+                case 'description':
+                case 'withdraw_validator_commission':
+                    return {
+                        ...value,
+                    };
+                case 'features':
+                    return {
+                        ...value,
+                        ...value.features,
+                    };
+                default:
+                    const {
+                        amount: [{ denom, amount }],
+                    } = value;
+
+                    return {
+                        ...value,
+                        amount,
+                        denom,
+                    };
+            }
+        },
+    },
+};
 </script>
 
 <style lang="scss">
-    .tx {
-        &__info {
-            padding: 0 0 10px 0;
-            margin: 0 0 10px 0;
-        }
+.tx {
+    &__info {
+        padding: 0 0 10px 0;
+        margin: 0 0 10px 0;
+    }
 
-        &__block {
-            font-size: 12px;
+    &__block {
+        font-size: 12px;
+        display: flex;
+
+        &__height {
+            margin: 0 0 0 5px;
+        }
+    }
+
+    &__type {
+        font-size: 18px;
+        color: $color-title;
+    }
+
+    &__content {
+        display: flex;
+        border-top: 1px solid $color-line;
+        border-bottom: 1px solid $color-line;
+        padding: 10px 0;
+        justify-content: space-between;
+        align-items: center;
+
+        @include responsive($sm) {
+            flex-direction: column;
+            align-items: start;
+        }
+    }
+
+    &__transfer,
+    &__redelegate {
+        &__sender,
+        &__amount,
+        &__recipient {
             display: flex;
-
-            &__height {
-                margin: 0 0 0 5px;
-            }
+            justify-content: center;
+            align-items: start;
+            height: 101px;
+            flex-direction: column;
         }
 
-        &__type {
-            font-size: 18px;
-            color: $color-title;
-        }
-
-        &__content {
-            display: flex;
-            border-top: 1px solid $color-line;
-            border-bottom: 1px solid $color-line;
-            padding: 10px 0;
-            justify-content: space-between;
+        @include responsive($sm) {
+            flex-direction: column;
             align-items: center;
+        }
+    }
 
-            @include responsive($sm) {
-                flex-direction: column;
-                align-items: start;
+    &__transfer,
+    &__redelegate {
+        &__sender,
+        &__recipient {
+            .ellipsis {
+                display: inline-block;
+                vertical-align: top;
+                max-width: 400px;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                white-space: nowrap;
+
+                @include responsive($smd) {
+                    display: inline-block;
+                    vertical-align: top;
+                    max-width: 250px !important;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    white-space: nowrap;
+                }
+                @include responsive($sm) {
+                    display: inline-block;
+                    vertical-align: top;
+                    max-width: 400px !important;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    white-space: nowrap;
+                }
+                @include responsive($xxs) {
+                    display: inline-block;
+                    vertical-align: top;
+                    max-width: 250px !important;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    white-space: nowrap;
+                }
             }
         }
+    }
 
-        &__transfer, &__redelegate {
-            &__sender, &__amount, &__recipient {
-                display: flex;
-                justify-content: center;
-                align-items: start;
-                height: 101px;
-                flex-direction: column;
-            }
-
-            @include responsive($sm) {
-                flex-direction: column;
-                align-items: center;
+    &__redelegate {
+        &__sender,
+        &__recipient {
+            .ellipsis {
+                @include responsive($md) {
+                    display: inline-block;
+                    vertical-align: top;
+                    max-width: 350px;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    white-space: nowrap;
+                }
             }
         }
+    }
 
-        &__transfer, &__redelegate {
-            &__sender, &__recipient {
+    &__delegate,
+    &__unbonding,
+    &__voting,
+    &__withdraw {
+        &__validator {
+            &__address {
                 .ellipsis {
                     display: inline-block;
                     vertical-align: top;
-                    max-width: 400px;
+                    max-width: 500px !important;
                     text-overflow: ellipsis;
                     overflow: hidden;
                     white-space: nowrap;
 
-                    @include responsive($smd) {
-                        display: inline-block;
-                        vertical-align: top;
-                        max-width: 250px !important;;
-                        text-overflow: ellipsis;
-                        overflow: hidden;
-                        white-space: nowrap;
-                    }
-                    @include responsive($sm) {
-                        display: inline-block;
-                        vertical-align: top;
-                        max-width: 400px !important;
-                        text-overflow: ellipsis;
-                        overflow: hidden;
-                        white-space: nowrap;
-                    }
                     @include responsive($xxs) {
                         display: inline-block;
                         vertical-align: top;
@@ -555,138 +595,98 @@
                 }
             }
         }
-
-        &__redelegate {
-            &__sender, &__recipient {
-                .ellipsis {
-                    @include responsive($md) {
-                        display: inline-block;
-                        vertical-align: top;
-                        max-width: 350px;
-                        text-overflow: ellipsis;
-                        overflow: hidden;
-                        white-space: nowrap;
-                    }
-                }
-            }
-        }
-
-        &__delegate, &__unbonding, &__voting, &__withdraw {
-            &__validator {
-                &__address {
-                    .ellipsis {
-                        display: inline-block;
-                        vertical-align: top;
-                        max-width: 500px !important;
-                        text-overflow: ellipsis;
-                        overflow: hidden;
-                        white-space: nowrap;
-
-                        @include responsive($xxs) {
-                            display: inline-block;
-                            vertical-align: top;
-                            max-width: 250px !important;
-                            text-overflow: ellipsis;
-                            overflow: hidden;
-                            white-space: nowrap;
-                        }
-                    }
-                }
-            }
-        }
-
-        &__costs {
-            display: flex;
-            justify-content: space-between;
-            height: 70px;
-            align-items: center;
-            border-bottom: 1px solid $color-line;
-            margin: 0 0 10px 0;
-        }
-
-        &__gas {
-
-        }
-
-        &__fee {
-
-        }
-
-        &__memo {
-            max-height: 200px;
-            min-height: 100px;
-            color: $color-text;
-            font-size: 14px;
-            margin: 0 0 10px 0;
-        }
-
-        &__timestamp {
-            color: $color-text;
-            font-size: 12px;
-        }
     }
 
-    .arrow {
-        transform: translateX(-50%) translateY(-50%);
-        width: 60px;
-        margin: 0 0 -2px 0px;
+    &__costs {
+        display: flex;
+        justify-content: space-between;
+        height: 70px;
+        align-items: center;
+        border-bottom: 1px solid $color-line;
+        margin: 0 0 10px 0;
+    }
+
+    &__gas {
+    }
+
+    &__fee {
+    }
+
+    &__memo {
+        max-height: 200px;
+        min-height: 100px;
+        color: $color-text;
+        font-size: 14px;
+        margin: 0 0 10px 0;
+    }
+
+    &__timestamp {
+        color: $color-text;
+        font-size: 12px;
+    }
+}
+
+.arrow {
+    transform: translateX(-50%) translateY(-50%);
+    width: 60px;
+    margin: 0 0 -2px 0px;
+
+    @include responsive($sm) {
+        transform: none;
+    }
+
+    &__top,
+    &__bottom {
+        background-color: $color-line;
+        height: 1px;
+        left: -5px;
+        top: 50%;
+        width: 56px;
 
         @include responsive($sm) {
-            transform: none;
-        }
-
-        &__top,
-        &__bottom {
-            background-color: $color-line;
-            height: 1px;
-            left: -5px;
-            top: 50%;
-            width: 56px;
-
-            @include responsive($sm) {
-                width: 71px;
-            }
-        }
-
-        &__top {
-            transform: rotate(65deg);
-            transform-origin: bottom right;
-
-            @include responsive($sm) {
-                -webkit-transform: rotate(20deg);
-                transform: rotate(20deg);
-                -webkit-transform-origin: 10px -110px;
-                transform-origin: 10px -110px;
-            }
-        }
-
-        &__bottom {
-            transform: rotate(-65deg);
-            transform-origin: top right;
-
-            @include responsive($sm) {
-                -webkit-transform: rotate(-20deg);
-                transform: rotate(-20deg);
-                -webkit-transform-origin: 50px -75px;
-                transform-origin: 50px -75px;
-            }
+            width: 71px;
         }
     }
 
-    .tx-container {
-        margin: 0 auto;
+    &__top {
+        transform: rotate(65deg);
+        transform-origin: bottom right;
 
-        .card-container {
-            max-width: 1000px;
-        }
-
-        .div {
-            background: $color-background-card;
-            padding: 4px $padding-basic;
-
-            .item {
-                margin: 16px 0;
-            }
+        @include responsive($sm) {
+            -webkit-transform: rotate(20deg);
+            transform: rotate(20deg);
+            -webkit-transform-origin: 10px -110px;
+            transform-origin: 10px -110px;
         }
     }
+
+    &__bottom {
+        transform: rotate(-65deg);
+        transform-origin: top right;
+
+        @include responsive($sm) {
+            -webkit-transform: rotate(-20deg);
+            transform: rotate(-20deg);
+            -webkit-transform-origin: 50px -75px;
+            transform-origin: 50px -75px;
+        }
+    }
+}
+
+.tx-container {
+    margin: 0 auto;
+
+    .card-container {
+        max-width: 1000px;
+    }
+
+    .div {
+        background: $color-background-card;
+        padding: 4px $padding-basic;
+
+        .item {
+            margin: 16px 0;
+        }
+    }
+}
 </style>

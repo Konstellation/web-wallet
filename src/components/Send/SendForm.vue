@@ -107,165 +107,166 @@
 </template>
 
 <script>
-    import { mapState, mapGetters } from 'vuex';
-    import { isEmpty } from 'lodash';
+import { mapState, mapGetters } from 'vuex';
+import { isEmpty } from 'lodash';
 
-    import AccountKeyPair from '@konstellation/cosmosjs/src/types/AccountKeyPair';
-    import { DEFAULT_DENOM } from '../../constants';
-    import View from '../../views/View';
+import AccountKeyPair from '@konstellation/cosmosjs/src/types/AccountKeyPair';
+import { DEFAULT_DENOM } from '../../constants';
+import View from '../../views/View';
 
-    export default {
-        name: 'SendForm',
-        extends: View,
-        data() {
-            const requireError = name => new Error(this.$t('global.required', { name }));
-            const validateAddr = (rule, value, callback) => {
-                if (!value || value.trim() === '') {
-                    callback(requireError(this.$t('send.address')));
-                    return;
-                }
+export default {
+    name: 'SendForm',
+    extends: View,
+    data() {
+        const requireError = name => new Error(this.$t('global.required', { name }));
+        const validateAddr = (rule, value, callback) => {
+            // if (!value || value.trim() === '') {
+            //     callback(requireError(this.$t('send.address')));
+            //     return;
+            // }
 
-                if (!AccountKeyPair.isValidAddress(value)) {
-                    callback(this.$t('send.addressWarn'));
-                    return;
-                }
+            // if (!AccountKeyPair.isValidAddress(value)) {
+            //     callback(this.$t('send.addressWarn'));
+            //     return;
+            // }
 
-                if (value === this.currentAddress) {
-                    callback(this.$t('send.addressSelf'));
-                    return;
-                }
+            // if (value === this.currentAddress) {
+            //     callback(this.$t('send.addressSelf'));
+            //     return;
+            // }
 
-                // this.$store.dispatch('transactions/fetchMemo', value);
-                callback();
-            };
-            const validateAmount = (rule, value, callback) => {
-                const input = value - 0;
-                const balance = this.selectedBalance.amount - 0;
-                if (input <= 0) {
-                    callback(new Error(this.$t('send.amountWarnPositive')));
-                    return;
-                }
-                if (input > balance) {
-                    callback(new Error(this.$t('send.amountWarn')));
-                    return;
-                }
+            // this.$store.dispatch('transactions/fetchMemo', value);
+            callback();
+        };
+        const validateAmount = (rule, value, callback) => {
+            const input = value - 0;
+            const balance = this.selectedBalance.amount - 0;
+            if (input <= 0) {
+                callback(new Error(this.$t('send.amountWarnPositive')));
+                return;
+            }
+            if (input > balance) {
+                callback(new Error(this.$t('send.amountWarn')));
+                return;
+            }
 
-                callback();
-            };
-            const validateFee = (rule, value, callback) => {
-                const input = value.amount - 0;
-                const balance = this.selectedBalance.amount - 0;
-                if (input < 0) {
-                    callback(new Error(this.$t('send.amountWarnPositive')));
-                    return;
-                }
-                if (input > balance) {
-                    callback(new Error(this.$t('send.amountWarn')));
-                    return;
-                }
+            callback();
+        };
+        const validateFee = (rule, value, callback) => {
+            const input = value.amount - 0;
+            const balance = this.selectedBalance.amount - 0;
+            if (input < 0) {
+                callback(new Error(this.$t('send.amountWarnPositive')));
+                return;
+            }
+            if (input > balance) {
+                callback(new Error(this.$t('send.amountWarn')));
+                return;
+            }
 
-                callback();
-            };
+            callback();
+        };
 
-            return {
-                formData: {},
-                form: {
-                    denom: this.$route.query.denom || DEFAULT_DENOM,
-                    amount: this.$route.query.amount || 0,
-                    address: this.$route.query.address || '',
-                    memo: '',
-                    fee: {
-                        amount: 0,
-                        denom: DEFAULT_DENOM,
-                    },
+        return {
+            formData: {},
+            form: {
+                denom: this.$route.query.denom || DEFAULT_DENOM,
+                amount: this.$route.query.amount || 0,
+                address: this.$route.query.address || '',
+                memo: '',
+                fee: {
+                    amount: 0,
+                    denom: DEFAULT_DENOM,
                 },
-                rules: {
-                    address: [{ validator: validateAddr, trigger: 'blur' }],
-                    amount: [{ validator: validateAmount, trigger: 'blur' }],
-                    fee: [{ validator: validateFee, trigger: 'blur' }],
-                },
-            };
-        },
-        computed: {
-            ...mapState('account', ['balance']),
-            ...mapState('transactions', ['memo']),
-            ...mapGetters('account', ['currentAddress']),
-            viewBalance() {
-                return this.balance.map(i => {
-                    const token = { ...i };
-                    token.label = token.denom.toUpperCase();
-                    return token;
-                });
             },
-            selectedBalance() {
-                return this.balance.find(b => b.denom === this.form.denom) || {
+            rules: {
+                address: [{ validator: validateAddr, trigger: 'blur' }],
+                amount: [{ validator: validateAmount, trigger: 'blur' }],
+                fee: [{ validator: validateFee, trigger: 'blur' }],
+            },
+        };
+    },
+    computed: {
+        ...mapState('account', ['balance']),
+        ...mapState('transactions', ['memo']),
+        ...mapGetters('account', ['currentAddress']),
+        viewBalance() {
+            return this.balance.map(i => {
+                const token = { ...i };
+                token.label = token.denom.toUpperCase();
+                return token;
+            });
+        },
+        selectedBalance() {
+            return (
+                this.balance.find(b => b.denom === this.form.denom) || {
                     denom: DEFAULT_DENOM,
                     amount: 0,
                     label: DEFAULT_DENOM.toUpperCase(),
-                };
-            },
+                }
+            );
         },
-        async mounted() {
-            if (!isEmpty(sessionStorage.getItem('sendForm'))) {
-                this.formData = JSON.parse(sessionStorage.getItem('sendForm'));
-            }
-            Object.keys(this.formData).forEach(k => {
-                this.form[k] = this.formData[k];
-            });
+    },
+    async mounted() {
+        if (!isEmpty(sessionStorage.getItem('sendForm'))) {
+            this.formData = JSON.parse(sessionStorage.getItem('sendForm'));
+        }
+        Object.keys(this.formData).forEach(k => {
+            this.form[k] = this.formData[k];
+        });
 
-            const balance = await this.$store.dispatch('account/fetchBalance');
-            if (isEmpty(balance)) {
-                this.form.denom = '';
-            }
+        const balance = await this.$store.dispatch('account/fetchBalance');
+        if (isEmpty(balance)) {
+            this.form.denom = '';
+        }
+    },
+    methods: {
+        setAmountAll() {
+            this.form.amount = this.selectedBalance.amount;
         },
-        methods: {
-            setAmountAll() {
-                this.form.amount = this.selectedBalance.amount;
-            },
-            onSubmit(e) {
-                e.preventDefault();
-                this.$refs.form.validate(valid => {
-                    if (!valid) return false;
-                    if (this.memo) {
-                        if (this.form.memo === '') {
-                            this.$message.error(
-                                this.$t('global.required', {
-                                    name: this.$t('send.memo'),
-                                }),
-                            );
-                        } else {
-                            sessionStorage.setItem('sendForm', JSON.stringify(this.form));
-                            this.$store.dispatch('transactions/input', this.form);
-                            this.$router.push('/send/confirm');
-                        }
+        onSubmit(e) {
+            e.preventDefault();
+            this.$refs.form.validate(valid => {
+                if (!valid) return false;
+                if (this.memo) {
+                    if (this.form.memo === '') {
+                        this.$message.error(
+                            this.$t('global.required', {
+                                name: this.$t('send.memo'),
+                            }),
+                        );
                     } else {
                         sessionStorage.setItem('sendForm', JSON.stringify(this.form));
                         this.$store.dispatch('transactions/input', this.form);
                         this.$router.push('/send/confirm');
                     }
+                } else {
+                    sessionStorage.setItem('sendForm', JSON.stringify(this.form));
+                    this.$store.dispatch('transactions/input', this.form);
+                    this.$router.push('/send/confirm');
+                }
 
-                    return true;
-                });
-            },
+                return true;
+            });
         },
-    };
+    },
+};
 </script>
 
 <style lang="scss" scoped>
+.row-balance {
+    margin: -16px 0 4px;
+    font-size: 11px;
 
-    .row-balance {
-        margin: -16px 0 4px;
-        font-size: 11px;
-
-        a {
-            color: $color-warning;
-            cursor: pointer;
-        }
+    a {
+        color: $color-warning;
+        cursor: pointer;
     }
+}
 
-    .btn-send {
-        margin-top: $padding-basic;
-        width: 100%;
-        padding: $padding-basic;
-    }
+.btn-send {
+    margin-top: $padding-basic;
+    width: 100%;
+    padding: $padding-basic;
+}
 </style>
